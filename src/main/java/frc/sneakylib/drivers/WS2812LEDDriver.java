@@ -43,7 +43,7 @@ public class WS2812LEDDriver extends SubsystemBase {
     public void runDefault() {
         if (Robot.ledCanStart == true) {
 
-            if (Robot.isValidAngle() == false) {
+            if (Robot.hasValidVisionTarget() == false) {
                 setBufferColor(255, 0, 0);
                 m_led.setData(m_ledBuffer);
                 j = 0;

@@ -28,6 +28,7 @@ public class DriveSubsystem extends SubsystemBase {
     private final DifferentialDrive m_drive = new DifferentialDrive(leftRearMotor, rightRearMotor);
 
     public final DifferentialDriveOdometry m_odometry;
+    public final DifferentialDriveOdometry m_global_drive_odom;
     public final AHRS m_gyro = new AHRS(SPI.Port.kMXP);
     private double target;
     private NeutralMode defaultMode = NeutralMode.Brake;
@@ -47,6 +48,7 @@ public class DriveSubsystem extends SubsystemBase {
         rightFrontMotor.follow(rightRearMotor);
 
         m_odometry = new DifferentialDriveOdometry(Rotation2d.fromDegrees(getHeading()));
+        m_global_drive_odom = new DifferentialDriveOdometry(Rotation2d.fromDegrees(getHeading()));
 
         zeroHeading();
         resetEncoders();
@@ -57,13 +59,17 @@ public class DriveSubsystem extends SubsystemBase {
         // This method will be called once per scheduler run
         m_odometry.update(
                 Rotation2d.fromDegrees(getHeading()), getLeftEncoderDistance(), getRightEncoderDistance());
-
         // System.out.println("Speeds : " + getWheelSpeeds());
         // System.out.println("Heading : " + getHeading());
         // System.out.println("Pose : " + getPose());
         // System.out.println("Left Encoder Pos : " + getLeftEncoderDistance());
         // System.out.println("Right Encoder Pos : " + getRightEncoderDistance());
 
+    }
+
+    public void updateGlobalOdom() {
+        m_global_drive_odom.update(
+                Rotation2d.fromDegrees(getHeading()), getLeftEncoderDistance(), getRightEncoderDistance());
     }
 
     public void tankDriveVolts(double leftVolts, double rightVolts) {

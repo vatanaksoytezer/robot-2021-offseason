@@ -37,7 +37,7 @@ public class TurretPIDCommand extends CommandBase {
     public void execute() {
         output = 0;
         error = 0;
-        if (Robot.isValidAngle()) {
+        if (Robot.hasValidVisionTarget()) {
             error = Robot.getVisionYawAngle();
             output = error * TurretConstants.kP;
             shouldTurnSide = error > 0 ? 'r' : 'l';

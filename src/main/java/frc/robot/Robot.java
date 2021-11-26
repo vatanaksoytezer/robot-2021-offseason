@@ -10,6 +10,7 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
 import edu.wpi.first.wpilibj.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.geometry.Translation2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -24,14 +25,15 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 public class Robot extends TimedRobot {
     NetworkTableInstance photon = NetworkTableInstance.create();
     public static NetworkTableEntry angle;
-    public static NetworkTableEntry validAngle;
+    public static NetworkTableEntry validVisionTarget;
+    public static NetworkTableEntry targetPose;
     public static NetworkTableInstance inst;
     NetworkTable table = photon.getTable("photonvision").getSubTable("microsoftlifecam");
     private Command m_autonomousCommand;
     public static RobotContainer m_robotContainer;
     public static SendableChooser<Integer> autoChooser = new SendableChooser<>();
     // public static PhotonPipelineResult result;
-
+    public static double[] robotOdomArray;
     public static boolean ledCanStart = false;
 
     /**
@@ -47,7 +49,8 @@ public class Robot extends TimedRobot {
 
         photon.startClient("10.72.85.12");
         angle = table.getEntry("targetYaw");
-        validAngle = table.getEntry("hasTarget");
+        validVisionTarget = table.getEntry("hasTarget");
+        targetPose = table.getEntry("targetPose");
 
         autoChooser.setDefaultOption("8 Balls Right Side", 0);
         autoChooser.addOption("3 Balls", 1);
@@ -70,6 +73,28 @@ public class Robot extends TimedRobot {
         // block in order for anything in the Command-based framework to work.
         CommandScheduler.getInstance().run();
 
+        // If there is a valid vision target, get robot pose
+        // Robot pose is with respect to vision target:
+        // We might want to translate the result by -5.8 in y axis to get field based odom
+        if (hasValidVisionTarget()) {
+            final double[] robotPose = getVisionTargetPose();
+            m_robotContainer.m_robotDrive.m_global_drive_odom.resetPosition(
+                    new Pose2d(new Translation2d(robotPose[0], robotPose[1]), new Rotation2d(robotPose[2])),
+                    new Rotation2d(robotPose[2]));
+        } else {
+            m_robotContainer.m_robotDrive.updateGlobalOdom();
+        }
+
+        robotOdomArray[0] = m_robotContainer.m_robotDrive.m_global_drive_odom.getPoseMeters().getX();
+        robotOdomArray[1] = m_robotContainer.m_robotDrive.m_global_drive_odom.getPoseMeters().getY();
+        robotOdomArray[2] =
+                m_robotContainer
+                        .m_robotDrive
+                        .m_global_drive_odom
+                        .getPoseMeters()
+                        .getRotation()
+                        .getDegrees();
+        SmartDashboard.putNumberArray("robot/GlobalPose", robotOdomArray);
         ledCanStart = true;
     }
 
@@ -88,7 +113,9 @@ public class Robot extends TimedRobot {
         m_robotContainer.m_robotDrive.zeroHeading();
         m_robotContainer.m_robotDrive.m_odometry.resetPosition(
                 m_robotContainer.s_trajectory.testAuto[0].getInitialPose(), new Rotation2d(0));
-
+        // Maybe reset to auto start?
+        // m_robotContainer.m_robotDrive.m_global_drive_odom.resetPosition(
+        //         m_robotContainer.s_trajectory.testAuto[0].getInitialPose(), new Rotation2d(0));
         m_autonomousCommand = m_robotContainer.getAutonomousCommand(autoChooser.getSelected());
         if (m_autonomousCommand != null) {
             m_autonomousCommand.schedule();
@@ -133,8 +160,13 @@ public class Robot extends TimedRobot {
         return angle.getDouble(0);
     }
 
-    public static boolean isValidAngle() {
+    public static boolean hasValidVisionTarget() {
 
-        return validAngle.getBoolean(false);
+        return validVisionTarget.getBoolean(false);
+    }
+
+    public static double[] getVisionTargetPose() {
+
+        return targetPose.getDoubleArray(new double[3]);
     }
 }

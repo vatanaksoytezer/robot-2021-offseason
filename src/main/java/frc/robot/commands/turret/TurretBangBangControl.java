@@ -33,8 +33,8 @@ public class TurretBangBangControl extends CommandBase {
     // Called every time the scheduler runs while the command is scheduled.
     @Override
     public void execute() {
-        System.out.println("Valid : " + Robot.isValidAngle());
-        if (Robot.isValidAngle()) {
+        System.out.println("Valid : " + Robot.hasValidVisionTarget());
+        if (Robot.hasValidVisionTarget()) {
             yaw = Robot.getVisionYawAngle();
             error = goal - yaw;
 
@@ -92,6 +92,6 @@ public class TurretBangBangControl extends CommandBase {
     }
 }
 
-/*if (Robot.isValidAngle() == true && error >= -2 && error <= 2) {
+/*if (Robot.hasValidVisionTarget() == true && error >= -2 && error <= 2) {
             return true;
         }*/
